@@ -20,6 +20,21 @@
 
 ## 快速开始
 
+### Windows 桌面启动
+
+先安装 Node.js LTS，然后双击项目目录中的 `start-desktop.bat`。
+
+脚本会自动完成以下动作：
+
+- 安装依赖
+- 构建前端页面
+- 启动本地服务
+- 用浏览器 app 窗口打开 `http://localhost:3001`
+
+升级时拉取最新代码后再次双击 `start-desktop.bat` 即可。
+
+### 开发模式
+
 ```bash
 npm install
 cp .env.example .env
@@ -66,6 +81,9 @@ npm run dev
 
 # 构建前端静态资源
 npm run build
+
+# 构建并以桌面模式启动
+npm run desktop
 ```
 
 ## 数据文件

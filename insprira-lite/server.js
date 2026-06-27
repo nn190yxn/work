@@ -29,6 +29,7 @@ function loadEnv() {
 loadEnv();
 
 const PORT = Number(process.env.PORT || 3001);
+const DESKTOP_MODE = process.env.DESKTOP_MODE === '1' || process.argv.includes('--desktop') || process.env.NODE_ENV === 'production';
 const REDFOX_API_KEY = process.env.REDFOX_API_KEY || '';
 const REDFOX_HOST = process.env.REDFOX_HOST || 'redfox.hk';
 const LLM_BASE_URL = process.env.LLM_BASE_URL || '';
@@ -1148,8 +1149,20 @@ function platformLabel(p) {
   return { dy: '抖音', xhs: '小红书', gzh: '公众号', sph: '视频号', ks: '快手', wb: '微博', zh: '知乎', bd: '百度', bz: 'B站', tt: '头条' }[p] || p;
 }
 
+if (DESKTOP_MODE) {
+  const distDir = path.join(__dirname, 'dist');
+  if (fs.existsSync(distDir)) {
+    app.use(express.static(distDir));
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api/')) return next();
+      res.sendFile(path.join(distDir, 'index.html'));
+    });
+  }
+}
+
 app.listen(PORT, () => {
   console.log(`[insprira-lite] 后端服务已启动: http://localhost:${PORT}`);
+  if (DESKTOP_MODE) console.log(`[insprira-lite] 桌面模式入口: http://localhost:${PORT}`);
   console.log(`[insprira-lite] RedFox API: ${REDFOX_API_KEY ? '已配置' : '未配置'}`);
   console.log(`[insprira-lite] LLM: ${LLM_BASE_URL && LLM_API_KEY ? LLM_MODEL : '未配置'}`);
 });

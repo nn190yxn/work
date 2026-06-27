@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>灵感追踪 - 热点选题建议</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">S</div>
+      <div>
+        <h1>灵感追踪</h1>
+        <span>基于 RedFox 热点的选题建议工具</span>
+      </div>
+    </div>
+    <div class="status" id="statusBar">
+      <span><span class="status-dot off" id="dotRedfox"></span>RedFox 检测中</span>
+      <span><span class="status-dot off" id="dotLLM"></span>LLM 检测中</span>
+    </div>
+  </header>
+
+  <details class="glass-card" style="border:1px solid var(--border);padding:16px;margin-bottom:20px;border-radius:12px">
+    <summary style="cursor:pointer;font-size:14px;font-weight:700;color:var(--text)">API 设置</summary>
+    <div style="margin-top:14px">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px" id="settingsStatus">正在读取设置...</div>
+      <div class="inspire-grid">
+        <div class="form-group">
+          <label>RedFox Host</label>
+          <input type="text" id="set_redfox_host" placeholder="redfox.hk" />
+        </div>
+        <div class="form-group">
+          <label>RedFox API Key</label>
+          <input type="password" id="set_redfox_key" placeholder="留空则保留当前配置" />
+        </div>
+        <div class="form-group">
+          <label>LLM Base URL</label>
+          <input type="text" id="set_llm_base" placeholder="https://api.example.com" />
+        </div>
+        <div class="form-group">
+          <label>LLM Model</label>
+          <input type="text" id="set_llm_model" placeholder="step-3.5-flash" />
+        </div>
+        <div class="form-group">
+          <label>LLM API Key</label>
+          <input type="password" id="set_llm_key" placeholder="留空则保留当前配置" />
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
+    </div>
+  </details>
+
+  <div class="hotlist-section" style="margin-bottom:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="section-title" style="margin-bottom:0">
+        <span class="dot" style="background:var(--accent)"></span>热榜浏览
+      </div>
+      <button class="btn btn-secondary" id="hotlistLoadBtn" onclick="loadHotlist(activePlatform)">加载热榜</button>
+    </div>
+    <div class="platform-tabs" id="hotlistTabs">
+      <button class="tab active" data-plat="dy">抖音</button>
+      <button class="tab" data-plat="xhs">小红书</button>
+      <button class="tab" data-plat="gzh">公众号</button>
+      <button class="tab" data-plat="sph">视频号</button>
+    </div>
+    <div id="hotlistContainer" style="margin-top:10px">
+      <div class="empty" style="padding:30px">
+        <div class="empty-icon">#</div>
+        <div>点击「加载热榜」获取对应平台热点数据</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="discover-section glass-card" style="border:1px solid var(--border);padding:20px;margin-bottom:20px;border-radius:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="section-title" style="margin-bottom:0">
+        <span class="dot" style="background:var(--hot)"></span>选题发现
+      </div>
+      <div style="display:flex;gap:4px;background:var(--bg);border-radius:8px;padding:3px">
+        <button class="discover-tab active" onclick="switchDiscoverTab('keyword')">关键词搜索</button>
+        <button class="discover-tab" onclick="switchDiscoverTab('audience')">客群画像</button>
+      </div>
+    </div>
+
+    <div id="tabKeyword" class="discover-tab-content">
+      <div class="inspire-grid">
+        <div class="form-group">
+          <label>领域 / 关键词</label>
+          <input type="text" id="domain" placeholder="例如：AI工具、个人成长、护肤成分" />
+        </div>
+        <div class="form-group">
+          <label>你的创作意图</label>
+          <textarea id="intent" rows="3" placeholder="描述你想做什么内容，例如：想做一期面向编程小白的 DeepSeek 使用教程"></textarea>
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="form-group" style="margin-bottom:6px"><label>搜索平台范围</label></div>
+        <div class="platform-checks" id="discoverPlatforms">
+          <label><input type="checkbox" value="dy" checked> 抖音</label>
+          <label><input type="checkbox" value="wb" checked> 微博</label>
+          <label><input type="checkbox" value="ks" checked> 快手</label>
+          <label><input type="checkbox" value="zh" checked> 知乎</label>
+          <label><input type="checkbox" value="bd"> 百度</label>
+          <label><input type="checkbox" value="bz"> 哔哩哔哩</label>
+          <label><input type="checkbox" value="tt"> 头条</label>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="discoverBtn" onclick="discoverTopics()">搜索关联热点</button>
+      <span id="discoverStatus" style="margin-left:12px;font-size:12px;color:var(--text-muted)"></span>
+    </div>
+
+    <div id="tabAudience" class="discover-tab-content" style="display:none">
+      <div class="inspire-grid">
+        <div class="form-group">
+          <label>我的业务方向</label>
+          <input type="text" id="aud_business" placeholder="例如：体育培训、美妆护肤、K12教育" />
+        </div>
+        <div class="form-group">
+          <label>目标客群角色</label>
+          <input type="text" id="aud_roles" placeholder="例如：宝妈、职场新人、大学生、退休老人" />
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group">
+          <label>性别</label>
+          <select id="aud_gender"><option value="">不限</option><option value="女性">女性</option><option value="男性">男性</option></select>
+        </div>
+        <div class="form-group">
+          <label>年龄段</label>
+          <input type="text" id="aud_age" placeholder="例如：20-40" />
+        </div>
+        <div class="form-group">
+          <label>所在城市</label>
+          <input type="text" id="aud_city_name" placeholder="例如：贵阳、遵义" />
+        </div>
+        <div class="form-group">
+          <label>城市级别</label>
+          <select id="aud_city_level"><option value="">不限</option><option value="一线">一线</option><option value="新一线">新一线</option><option value="二三线">二三线</option><option value="下沉">下沉市场</option></select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label>客群兴趣方向（逗号分隔，留空则自动推断）</label>
+        <textarea id="aud_interests" rows="2" placeholder="例如：美容、旅游、户外露营、亲子活动、穿搭"></textarea>
+      </div>
+      <button class="btn btn-primary" id="audienceBtn" onclick="analyzeAudience()">分析客群兴趣热榜</button>
+      <span id="audienceStatus" style="margin-left:12px;font-size:12px;color:var(--text-muted)"></span>
+    </div>
+  </div>
+
+  <div class="glass-card" style="border:1px solid var(--border);padding:20px;margin-bottom:20px;border-radius:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap">
+      <div class="section-title" style="margin-bottom:0">
+        <span class="dot" style="background:var(--success)"></span>IP运营工作台
+      </div>
+      <button class="btn btn-secondary" onclick="loadTracker()">刷新档案</button>
+    </div>
+
+    <div class="inspire-grid">
+      <div class="form-group">
+        <label>品牌名称</label>
+        <input type="text" id="trk_brand" placeholder="例如：追光小牛" value="追光小牛" />
+      </div>
+      <div class="form-group">
+        <label>IP名称 / 账号类型</label>
+        <input type="text" id="trk_ip" placeholder="例如：教练IP、宝妈IP、本地亲子IP" />
+      </div>
+      <div class="form-group">
+        <label>目标客群</label>
+        <input type="text" id="trk_audience" placeholder="例如：贵阳30-40岁宝妈" />
+      </div>
+      <div class="form-group">
+        <label>内容目标</label>
+        <input type="text" id="trk_goal" placeholder="例如：暑期训练营获客" />
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="saveProfile()">保存IP档案</button>
+
+    <div style="display:grid;grid-template-columns:280px 1fr;gap:16px;margin-top:20px" class="tracker-layout">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px">
+        <div class="form-group" style="margin-bottom:10px">
+          <label>当前IP档案</label>
+          <select id="profileSelect" onchange="selectProfile(this.value)">
+            <option value="">暂无档案</option>
+          </select>
+        </div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px">长期跟踪话题</div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label>话题关键词</label>
+          <input type="text" id="trk_topic" placeholder="例如：贵阳遛娃、少儿体能" />
+        </div>
+        <button class="btn btn-secondary" style="width:100%;justify-content:center" onclick="addTopic()">添加话题</button>
+        <div id="trackerTopics" style="margin-top:12px"></div>
+      </div>
+
+      <div>
+        <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:12px">
+          <div class="form-group" style="min-width:180px;flex:1">
+            <label>低粉爆款搜索词</label>
+            <input type="text" id="viral_keyword" placeholder="例如：亲子、少儿体能、贵阳遛娃" />
+          </div>
+          <div class="form-group" style="width:120px">
+            <label>最高粉丝</label>
+            <input type="number" id="viral_followers" value="50000" />
+          </div>
+          <div class="form-group" style="width:120px">
+            <label>最低点赞</label>
+            <input type="number" id="viral_likes" value="1000" />
+          </div>
+          <button class="btn btn-primary" onclick="runViralRadar()">扫描低粉爆款</button>
+        </div>
+        <div id="viralResults">
+          <div class="empty" style="padding:24px"><div class="empty-icon">*</div><div>输入关键词，扫描低粉爆款作品</div></div>
+        </div>
+        <div id="deconstructPanel" style="display:none;margin-top:14px;background:var(--bg);border:1px solid var(--accent);border-radius:10px;padding:14px"></div>
+        <div style="margin-top:16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:10px">最近跟踪快照</div>
+          <div id="snapshotHistory"><div style="font-size:12px;color:var(--text-muted)">暂无快照</div></div>
+        </div>
+        <div style="margin-top:16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px">
+            <div style="font-size:13px;font-weight:600">选题资产库</div>
+            <button class="btn btn-secondary" style="font-size:11px;padding:4px 8px" onclick="renderAssetLibrary()">刷新</button>
+          </div>
+          <div id="assetLibrary"><div style="font-size:12px;color:var(--text-muted)">暂无选题资产</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="errorBar" class="error" style="display:none"></div>
+
+  <div id="discoverResults" style="display:none">
+    <div class="section-title" style="margin-top:8px">
+      <span class="dot" style="background:var(--warning)"></span>关联热点
+      <span id="discoverCount" style="font-size:12px;color:var(--text-muted);font-weight:400"></span>
+    </div>
+    <div id="discoverItems" style="margin-bottom:20px"></div>
+  </div>
+
+  <div id="copyPanel" class="glass-card" style="display:none;border:1px solid var(--accent);padding:20px;margin-bottom:20px;border-radius:12px;position:relative">
+    <button onclick="closeCopyPanel()" style="position:absolute;top:10px;right:14px;background:none;border:none;font-size:18px;color:var(--text-muted);cursor:pointer">&times;</button>
+    <div id="copyPanelContent"></div>
+  </div>
+
+  <div id="kwConfigPanel" style="border:1px solid var(--border);padding:16px;margin-bottom:20px;border-radius:10px;display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <span style="font-size:13px;font-weight:600">关键词权重配置</span>
+      <div>
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="loadKeywordConfigPanel()">刷新</button>
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;margin-left:6px" onclick="clearFeedback()">清空反馈</button>
+      </div>
+    </div>
+    <div id="kwConfigContent">
+      <div style="font-size:12px;color:var(--text-muted)">加载中...</div>
+    </div>
+  </div>
+
+  <div class="glass-strong" style="border:1px solid var(--border);padding:20px;margin-bottom:24px;border-radius:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="section-title" style="margin-bottom:0">
+        <span class="dot" style="background:var(--success)"></span>趋势分析
+        <span id="trendStatus" style="font-size:12px;color:var(--text-muted);font-weight:400"></span>
+      </div>
+      <button class="btn btn-secondary" onclick="loadTrends()">分析趋势</button>
+    </div>
+    <div id="trendsContainer">
+      <div class="empty" style="padding:30px">
+        <div class="empty-icon">~</div>
+        <div>点击「分析趋势」，基于当前全平台热榜提取热点主题</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    数据来源 RedFoxHub · 灵感来源于 insprira 项目
+  </footer>
+</div>
+
+<script>
+const PLAT_LABELS = { dy: '抖音', xhs: '小红书', gzh: '公众号', sph: '视频号',
+  wb: '微博', ks: '快手', zh: '知乎', bd: '百度', bz: 'B站', tt: '头条' };
+let activePlatform = 'dy';
+
+function $$(sel) { return document.querySelectorAll(sel); }
+function $(sel) { return document.querySelector(sel); }
+
+async function api(path, body, method) {
+  const opts = { method: method || (body ? 'POST' : 'GET'), headers: body ? { 'Content-Type': 'application/json' } : {} };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(path, opts);
+  return r.json();
+}
+
+async function checkStatus() {
+  try {
+    const s = await api('/api/status');
+    updateDot('dotRedfox', s.redfox);
+    updateDot('dotLLM', s.llm);
+    $('#dotRedfox').parentElement.childNodes[1].textContent = s.redfox ? 'RedFox 已连接' : 'RedFox 未配置';
+    $('#dotLLM').parentElement.childNodes[1].textContent = s.llm ? `LLM 已配置 (${s.model})` : 'LLM 未配置';
+  } catch {}
+}
+
+async function loadSettings() {
+  try {
+    const s = await api('/api/settings', null, 'GET');
+    $('#set_redfox_host').value = s.redfoxHost || 'redfox.hk';
+    $('#set_llm_base').value = s.llmBaseUrl || '';
+    $('#set_llm_model').value = s.llmModel || '';
+    $('#settingsStatus').textContent = `RedFox: ${s.redfoxConfigured ? '已配置 ' + s.redfoxApiKeyMasked : '未配置'} · LLM: ${s.llmConfigured ? '已配置 ' + s.llmApiKeyMasked : '未配置'}`;
+  } catch (e) {
+    $('#settingsStatus').textContent = '设置读取失败: ' + e.message;
+  }
+}
+
+async function saveSettings() {
+  const payload = {
+    redfoxHost: $('#set_redfox_host').value.trim(),
+    redfoxApiKey: $('#set_redfox_key').value.trim(),
+    llmBaseUrl: $('#set_llm_base').value.trim(),
+    llmModel: $('#set_llm_model').value.trim(),
+    llmApiKey: $('#set_llm_key').value.trim(),
+  };
+  try {
+    const r = await api('/api/settings', payload);
+    if (r.error) { showError(r.error); return; }
+    $('#set_redfox_key').value = '';
+    $('#set_llm_key').value = '';
+    await loadSettings();
+    await checkStatus();
+  } catch (e) {
+    showError('保存设置失败: ' + e.message);
+  }
+}
+
+function updateDot(id, on) {
+  const dot = $('#' + id);
+  if (on) { dot.classList.add('on'); dot.classList.remove('off'); }
+  else { dot.classList.remove('on'); dot.classList.add('off'); }
+}
+
+async function loadHotlist(plat) {
+  const container = $('#hotlistContainer');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div>正在加载热榜...</div>';
+  try {
+    const r = await api('/api/hotspot/platform', { platform: plat, limit: 30 });
+    if (r.error) { container.innerHTML = `<div class="error">${r.error}</div>`; return; }
+    const records = r.records;
+    if (!records?.length) { container.innerHTML = '<div class="empty"><div class="empty-icon">-</div>暂无数据</div>'; return; }
+    container.innerHTML = `<div class="hotlist">${records.map((item, i) => {
+      const title = item.title || item.hotSpotTitle || '';
+      const score = item.score ?? item.hotValue ?? 0;
+      const rank = i + 1;
+      return `<div class="hot-item">
+        <div class="hot-rank${rank <= 3 ? ' top' : ''}">${rank}</div>
+        <div class="hot-info">
+          <div class="hot-title">${esc(title)}</div>
+          <div class="hot-meta">
+            <span>${PLAT_LABELS[plat]}</span>
+            ${score ? `<span class="hot-score">热度 ${typeof score === 'number' ? score.toFixed(0) : score}</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+  } catch (e) {
+    container.innerHTML = `<div class="error">加载失败: ${e.message}</div>`;
+  }
+}
+
+function esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+
+function safeUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' ? parsed.href : '';
+  } catch {
+    return '';
+  }
+}
+
+function switchDiscoverTab(tab) {
+  $$('.discover-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.discover-tab[onclick*="${tab}"]`).classList.add('active');
+  $$('.discover-tab-content').forEach(c => c.style.display = 'none');
+  const target = tab === 'keyword' ? 'tabKeyword' : 'tabAudience';
+  $(`#${target}`).style.display = 'block';
+}
+
+async function analyzeAudience() {
+  const business = $('#aud_business').value.trim();
+  const roles = $('#aud_roles').value.trim();
+  const interests = $('#aud_interests').value.trim();
+  const gender = $('#aud_gender').value;
+  const age = $('#aud_age').value.trim();
+  const cityName = $('#aud_city_name').value.trim();
+  const cityLevel = $('#aud_city_level').value;
+
+  if (!business && !interests) {
+    showError('请填写业务方向或客群兴趣');
+    return;
+  }
+
+  const btn = $('#audienceBtn');
+  const status = $('#audienceStatus');
+  btn.disabled = true;
+  btn.textContent = '分析中...';
+  status.textContent = '正在基于客群画像匹配热榜，请耐心等待...';
+  $('#errorBar').style.display = 'none';
+
+  const personaSegs = [gender, age, cityName, cityLevel ? `${cityLevel}城市` : ''].filter(Boolean);
+  const payload = {
+    business,
+    gender: personaSegs.length ? personaSegs.join('/') : undefined,
+    ageRange: age || undefined,
+    roles: roles || undefined,
+    interests: interests || undefined,
+    city: cityName || undefined,
+    cityLevel: cityLevel || undefined,
+  };
+
+  try {
+    const r = await api('/api/audience', payload);
+    if (r.error) { showError(r.error); return; }
+    renderAudienceResults(r);
+    status.textContent = `${r.persona} | ${r.total} 条选题`;
+    $$('#kwConfigPanel')[0].style.display = 'block';
+  } catch (e) {
+    showError('请求失败: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '分析客群兴趣热榜';
+    setTimeout(() => { status.textContent = ''; }, 12000);
+  }
+}
+
+function renderAudienceResults(data) {
+  const section = $('#discoverResults');
+  const container = $('#discoverItems');
+  $('#discoverCount').textContent = `(${data.total} 条)`;
+  section.style.display = 'block';
+
+  if (!data.items?.length) {
+    container.innerHTML = `<div class="empty" style="padding:24px">
+      <div class="empty-icon">~</div>
+      <div>当前热榜中暂未找到高度匹配「${esc(data.persona)}」的热点</div>
+    </div>`;
+    $('#copyPanel').style.display = 'none';
+    return;
+  }
+
+  const relColor = (v) => v >= 8 ? 'var(--hot)' : v >= 6 ? 'var(--warning)' : 'var(--accent)';
+  const relBg = (v) => `rgba(${v>=8?'239,68,68':v>=6?'234,179,8':'167,139,250'},0.12)`;
+
+  container.innerHTML = `
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">
+      客群: ${esc(data.persona || '')}
+      ${data.keywords?.length ? ` · 热词: ${data.keywords.map(k => esc(k)).join('、')}` : ''}
+    </div>
+    <div class="hotlist">${data.items.map(item => `
+      <div class="hot-item" style="cursor:pointer;border-left:3px solid ${relColor(item.relevance)};padding-left:12px" onclick="selectTopicFromAudience('${esc(JSON.stringify(item).replace(/'/g,"\\'"))}')">
+        <div class="hot-rank" style="min-width:36px;text-align:center;font-size:12px;font-weight:700;background:${relBg(item.relevance)};color:${relColor(item.relevance)};border-radius:4px;padding:2px 6px">${item.relevance}分</div>
+        <div class="hot-info" style="flex:1">
+          <div class="hot-title">${esc(item.title)}</div>
+          ${item.angle ? `<div style="font-size:12px;color:var(--accent);margin-top:3px">选题角度: ${esc(item.angle)}</div>` : ''}
+          <div class="hot-meta">
+            <span>${esc(item.platform)}</span>
+            ${item.hotCount ? `<span class="hot-score">热度 ${item.hotCount}</span>` : ''}
+          </div>
+        </div>
+        <div class="idea-feedback" style="margin-top:0;padding-top:0;border:none;flex-shrink:0;margin-left:6px">
+          <button class="feedback-btn feedback-up" style="padding:2px 8px;font-size:10px" data-title="${esc(item.title)}" data-extra="${esc((item.angle||''))}" onclick="event.stopPropagation();sendFeedbackBtn(this)">+</button>
+        </div>
+      </div>
+    `).join('')}</div>
+  `;
+  loadKeywordConfigPanel();
+}
+
+function selectTopicFromAudience(itemJsonStr) {
+  const item = typeof itemJsonStr === 'string' ? JSON.parse(itemJsonStr.replace(/\\'/g, "'")) : itemJsonStr;
+  selectTopic(item);
+}
+
+function sendFeedbackBtn(btn) {
+  const title = btn.dataset.title || '';
+  const extra = btn.dataset.extra || '';
+  const kwString = [title, extra].filter(Boolean).join(' ');
+  btn.disabled = true;
+  api('/api/keyword-config/feedback', { topicTitle: title, topicKeywords: kwString, action: 'like' })
+    .then(() => {
+      btn.textContent = 'OK';
+      btn.classList.add('feedback-done');
+      loadKeywordConfigPanel();
+    })
+    .catch(() => { btn.disabled = false; });
+}
+
+document.getElementById('hotlistTabs').addEventListener('click', (e) => {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  $$('#hotlistTabs .tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  activePlatform = tab.dataset.plat;
+});
+
+async function discoverTopics() {
+  const domain = $('#domain').value.trim();
+  const intent = $('#intent').value.trim();
+  if (!domain && !intent) {
+    showError('请输入领域关键词或创作意图');
+    return;
+  }
+  const platforms = [...$$('#discoverPlatforms input:checked')].map(cb => cb.value);
+
+  const btn = $('#discoverBtn');
+  const status = $('#discoverStatus');
+  btn.disabled = true;
+  btn.textContent = '搜索中...';
+  status.textContent = '正在拉取多平台热榜，LLM 评估关联度...';
+  $('#errorBar').style.display = 'none';
+
+  let keywordConfig = {};
+  try { const cfgRes = await api('/api/keyword-config', null, 'GET'); if (cfgRes?.keywords) keywordConfig = cfgRes; } catch {}
+
+  let enhancedDomain = domain;
+  if (keywordConfig.keywords) {
+    const boostWords = Object.entries(keywordConfig.keywords)
+      .filter(([, w]) => w > 0).sort(([,a],[,b]) => b-a).slice(0,5).map(([k]) => k);
+    if (boostWords.length) enhancedDomain = domain + ' ' + boostWords.join(' ');
+  }
+
+  try {
+    const r = await api('/api/discover', { domain: enhancedDomain, intent, platforms });
+    if (r.error) { showError(r.error); return; }
+    renderDiscoverItems(r);
+    status.textContent = `提取关键词: ${(r.keywords||[]).join('、')}，筛选 ${r.total} 条关联热点`;
+    $$('#kwConfigPanel')[0].style.display = 'block';
+  } catch (e) {
+    showError('请求失败: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '搜索关联热点';
+    setTimeout(() => { status.textContent = ''; }, 8000);
+  }
+}
+
+function renderDiscoverItems(data) {
+  const section = $('#discoverResults');
+  const container = $('#discoverItems');
+  $('#discoverCount').textContent = `(${data.total} 条)`;
+  section.style.display = 'block';
+
+  const kwTags = (data.keywords || []).map(k => `<span style="padding:1px 8px;background:rgba(167,139,250,0.15);border-radius:3px;font-size:11px">${esc(k)}</span>`).join(' ');
+
+  if (!data.items?.length) {
+    container.innerHTML = `
+      <div class="empty" style="padding:24px">
+        <div class="empty-icon">~</div>
+        <div>当前热榜中暂未找到与「${esc(data.intent)}」高度匹配的热点</div>
+        <div style="font-size:12px;margin-top:8px;color:var(--text-muted)">
+          系统已从 ${data.sampled} 条热榜中（全量 ${data.all} 条）完成关联度评估。<br>
+          建议调整关键词或创作意图后重试，或查看下方热榜手动浏览。
+        </div>
+      </div>
+    `;
+    $('#copyPanel').style.display = 'none';
+    return;
+  }
+
+  const relColor = (v) => v >= 8 ? 'var(--hot)' : v >= 6 ? 'var(--warning)' : v >= 4 ? 'var(--accent)' : 'var(--text-muted)';
+  const relBg = (v) => `rgba(${v>=8?'239,68,68':v>=6?'234,179,8':v>=4?'167,139,250':'108,108,138'},0.12)`;
+
+  container.innerHTML = `<div class="hotlist">${data.items.map(item => `
+    <div class="hot-item" style="cursor:pointer;border-left:3px solid ${relColor(item.relevance)};padding-left:12px" onclick="selectTopic('${esc(JSON.stringify(item).replace(/'/g,"\\'"))}')">
+      <div class="hot-rank" style="min-width:36px;text-align:center;font-size:12px;font-weight:700;background:${relBg(item.relevance)};color:${relColor(item.relevance)};border-radius:4px;padding:2px 6px">${item.relevance}分</div>
+      <div class="hot-info" style="flex:1">
+        <div class="hot-title">${esc(item.title)}</div>
+        <div class="hot-meta">
+          <span>${esc(item.platform)}</span>
+          ${item.hotCount ? `<span class="hot-score">热度 ${item.hotCount}</span>` : ''}
+          ${item.reason ? `<span style="color:var(--text-muted);font-size:11px">${esc(item.reason)}</span>` : ''}
+          ${item.desc ? `<span style="color:var(--text-muted);font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(item.desc)}</span>` : ''}
+        </div>
+      </div>
+      <div class="idea-feedback" style="margin-top:0;padding-top:0;border:none;flex-shrink:0;margin-left:6px">
+        <button class="feedback-btn feedback-up" style="padding:2px 8px;font-size:10px" data-title="${esc(item.title)}" data-extra="" onclick="event.stopPropagation();sendFeedbackBtn(this)">+</button>
+      </div>
+    </div>
+  `).join('')}</div>`;
+
+  loadKeywordConfigPanel();
+}
+
+function selectTopic(itemJson) {
+  const copyPanel = $('#copyPanel');
+  const content = $('#copyPanelContent');
+  const item = typeof itemJson === 'string'
+    ? JSON.parse(itemJson.replace(/\\'/g, "'"))
+    : itemJson;
+
+  content.innerHTML = `
+    <div style="font-size:15px;font-weight:600;margin-bottom:6px;color:var(--text)">${esc(item.title)}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">
+      ${esc(item.platform)} · 热度 ${item.hotCount || '--'} · 关联度 ${item.relevance}分
+      ${item.reason ? ` · ${esc(item.reason)}` : ''}
+      ${item.desc ? `<div style="margin-top:2px">${esc(item.desc)}</div>` : ''}
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">生成文案平台:</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+      ${[{id:'xhs',label:'小红书图文'},{id:'dy',label:'抖音脚本'},{id:'sph',label:'视频号脚本'},{id:'gzh',label:'公众号文章'}].map(p => `
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 12px" onclick="generateCopy(event,'${p.id}')">${p.label}</button>
+      `).join('')}
+    </div>
+    <div id="copyOutput" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;min-height:80px">
+      <div style="font-size:12px;color:var(--text-muted)">选择上方平台按钮，生成对应格式的文案草稿</div>
+    </div>
+  `;
+  copyPanel.style.display = 'block';
+  copyPanel.scrollIntoView({ behavior: 'smooth' });
+  copyPanel._topic = item;
+}
+
+function closeCopyPanel() {
+  $('#copyPanel').style.display = 'none';
+}
+
+async function generateCopy(event, targetPlatform) {
+  const btn = event.target;
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '生成中...';
+
+  const topic = $('#copyPanel')._topic;
+  const intent = $('#intent').value.trim() || topic.title;
+  const output = $('#copyOutput');
+  output.innerHTML = '<div class="loading"><div class="spinner"></div>正在生成文案...</div>';
+
+  try {
+    const r = await api('/api/copy/generate', { topic, targetPlatform, intent });
+    if (r.error) { output.innerHTML = `<div class="error">${r.error}</div>`; return; }
+    output.innerHTML = `
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px">${esc(r.format)}</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--text)">${esc(r.title)}</div>
+      <pre style="font-size:13px;line-height:1.8;white-space:pre-wrap;color:var(--text);margin:0">${esc(r.copy)}</pre>
+      ${r.hashtags?.length ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:4px">
+        ${r.hashtags.map(t => `<span style="font-size:11px;color:var(--accent);padding:1px 6px;background:rgba(167,139,250,0.1);border-radius:3px">#${esc(t)}</span>`).join('')}
+      </div>` : ''}
+    `;
+  } catch (e) {
+    output.innerHTML = `<div class="error">文案生成失败: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = origText;
+  }
+}
+
+async function sendFeedback(event, title, kwString, action = 'like') {
+  event.stopPropagation();
+  const btn = event.target;
+  btn.disabled = true;
+  try {
+    await api('/api/keyword-config/feedback', { topicTitle: title, topicKeywords: kwString, action });
+    btn.textContent = 'OK';
+    btn.classList.add('feedback-done');
+    setTimeout(() => loadKeywordConfigPanel(), 500);
+  } catch { btn.disabled = false; }
+}
+
+function showError(msg) {
+  const bar = $('#errorBar');
+  bar.textContent = msg;
+  bar.style.display = 'block';
+  setTimeout(() => { bar.style.display = 'none'; }, 5000);
+}
+
+async function loadTrends() {
+  const container = $('#trendsContainer');
+  const status = $('#trendStatus');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div>正在分析全平台热榜趋势...</div>';
+  status.textContent = '';
+  try {
+    const r = await api('/api/trends', {});
+    if (r.error) { container.innerHTML = `<div class="error">${r.error}</div>`; return; }
+    renderTrends(r);
+    status.textContent = `(${r.themes.length} 个主题，基于 ${r.totalItems} 条热榜)`;
+  } catch (e) {
+    container.innerHTML = `<div class="error">分析失败: ${e.message}</div>`;
+  }
+}
+
+function renderTrends(data) {
+  const container = $('#trendsContainer');
+  if (!data.themes?.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">-</div>暂无趋势主题</div>';
+    return;
+  }
+  container.innerHTML = `
+    ${data.summary ? `<p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;line-height:1.6">${esc(data.summary)}</p>` : ''}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">
+      ${data.themes.map((t) => `
+        <div style="background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:13px;font-weight:600;color:var(--text)">${esc(t.name)}</span>
+            <span style="font-size:11px;font-weight:700;color:${t.intensity >= 200 ? 'var(--hot)' : t.intensity >= 120 ? 'var(--warning)' : 'var(--success)'}">${t.intensity}</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);display:flex;flex-wrap:wrap;gap:4px">
+            ${t.platforms.map(p => `<span style="padding:1px 6px;background:rgba(167,139,250,0.1);border-radius:3px">${p}</span>`).join('')}
+            <span style="margin-left:auto">${t.mentions} 条提及</span>
+          </div>
+          ${t.aliases.length ? `<div style="font-size:10px;color:var(--text-muted);margin-top:4px">aka: ${t.aliases.map(a => esc(a)).join('、')}</div>` : ''}
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+async function loadKeywordConfigPanel() {
+  const content = $('#kwConfigContent');
+  try {
+    const cfg = await api('/api/keyword-config', null, 'GET');
+    const entries = Object.entries(cfg.keywords || {}).sort(([, a], [, b]) => b - a);
+    if (!entries.length) {
+      content.innerHTML = '<div style="font-size:12px;color:var(--text-muted)">暂无关键词权重数据。对选题点 + 后自动积累。</div>';
+    } else {
+      const maxW = Math.max(...entries.map(([, w]) => Math.abs(w)), 1);
+      content.innerHTML = `
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          ${entries.map(([kw, w]) => {
+            const pct = Math.round(Math.abs(w) / maxW * 100);
+            const color = w > 0 ? 'var(--hot)' : 'var(--error)';
+            return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;font-size:11px;border-radius:6px;background:rgba(167,139,250,0.08);border:1px solid var(--border)">
+              ${esc(kw)}
+              <span style="font-size:11px;font-weight:600;color:${color}">${w > 0 ? '+' : ''}${w.toFixed(1)}</span>
+              <div style="width:40px;height:3px;background:var(--border);border-radius:2px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:${color};border-radius:2px"></div>
+              </div>
+            </span>`;
+          }).join('')}
+        </div>
+      `;
+    }
+  } catch {
+    content.innerHTML = '<div style="font-size:12px;color:var(--error)">加载失败</div>';
+  }
+}
+
+async function clearFeedback() {
+  try {
+    await api('/api/keyword-config/feedback', { action: 'clear' });
+    loadKeywordConfigPanel();
+  } catch {}
+}
+
+let trackerState = { profiles: [], topics: [], snapshots: [] };
+let selectedProfileId = '';
+let viralWorks = [];
+let currentViralKeyword = '';
+
+async function loadTracker() {
+  try {
+    trackerState = await api('/api/tracker', null, 'GET');
+    if (!selectedProfileId) selectedProfileId = trackerState.profiles?.[0]?.id || '';
+    renderProfileSelect();
+    renderTrackerTopics();
+    renderSnapshotHistory();
+    renderAssetLibrary();
+  } catch (e) {
+    showError('加载IP档案失败: ' + e.message);
+  }
+}
+
+async function saveProfile() {
+  const payload = {
+    brandName: $('#trk_brand').value.trim(),
+    ipName: $('#trk_ip').value.trim(),
+    audience: $('#trk_audience').value.trim(),
+    contentGoal: $('#trk_goal').value.trim(),
+    city: $('#aud_city_name')?.value?.trim() || '',
+  };
+  try {
+    const r = await api('/api/tracker/profile', payload);
+    if (r.error) { showError(r.error); return; }
+    trackerState = r.data;
+    selectedProfileId = r.profile.id;
+    renderProfileSelect();
+    renderTrackerTopics();
+    renderSnapshotHistory();
+    renderAssetLibrary();
+  } catch (e) {
+    showError('保存IP档案失败: ' + e.message);
+  }
+}
+
+async function addTopic() {
+  const keyword = $('#trk_topic').value.trim();
+  if (!keyword) { showError('请填写跟踪话题关键词'); return; }
+  try {
+    const r = await api('/api/tracker/topic', { profileId: selectedProfileId, keyword, platform: 'dy' });
+    if (r.error) { showError(r.error); return; }
+    trackerState = r.data;
+    $('#trk_topic').value = '';
+    renderTrackerTopics();
+    renderSnapshotHistory();
+    renderAssetLibrary();
+  } catch (e) {
+    showError('添加话题失败: ' + e.message);
+  }
+}
+
+function renderProfileSelect() {
+  const select = $('#profileSelect');
+  const profiles = trackerState.profiles || [];
+  if (!profiles.length) {
+    select.innerHTML = '<option value="">暂无档案</option>';
+    return;
+  }
+  select.innerHTML = profiles.map(profile => {
+    const label = [profile.brandName, profile.ipName || profile.ipType, profile.audience].filter(Boolean).join(' / ');
+    return `<option value="${profile.id}" ${profile.id === selectedProfileId ? 'selected' : ''}>${esc(label)}</option>`;
+  }).join('');
+}
+
+function selectProfile(profileId) {
+  selectedProfileId = profileId;
+  renderTrackerTopics();
+  renderSnapshotHistory();
+  renderAssetLibrary();
+}
+
+function renderTrackerTopics() {
+  const box = $('#trackerTopics');
+  const topics = (trackerState.topics || []).filter(topic => !selectedProfileId || !topic.profileId || topic.profileId === selectedProfileId);
+  if (!topics.length) {
+    box.innerHTML = '<div style="font-size:12px;color:var(--text-muted)">暂无长期跟踪话题</div>';
+    return;
+  }
+  box.innerHTML = topics.map(topic => `
+    <div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;background:var(--bg-card)">
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px">${esc(topic.keyword)}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">${topic.lastSnapshotAt ? new Date(topic.lastSnapshotAt).toLocaleString() : '尚未扫描'}</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 8px" onclick="scanTopic('${topic.id}')">扫描</button>
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 8px" onclick="useTopicKeyword('${esc(topic.keyword).replace(/'/g, "\\'")}')">使用</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function useTopicKeyword(keyword) {
+  $('#viral_keyword').value = keyword;
+  runViralRadar();
+}
+
+async function scanTopic(topicId) {
+  try {
+    const r = await api('/api/tracker/snapshot', {
+      topicId,
+      maxFollowers: Number($('#viral_followers').value || 50000),
+      minLikes: Number($('#viral_likes').value || 1000),
+    });
+    if (r.error) { showError(r.error); return; }
+    trackerState = r.data;
+    renderProfileSelect();
+    renderTrackerTopics();
+    renderSnapshotHistory();
+    renderAssetLibrary();
+    renderViralResults(r.snapshot.topItems || [], r.snapshot.keyword);
+  } catch (e) {
+    showError('话题扫描失败: ' + e.message);
+  }
+}
+
+async function runViralRadar() {
+  const keyword = $('#viral_keyword').value.trim();
+  if (!keyword) { showError('请填写低粉爆款搜索词'); return; }
+  const box = $('#viralResults');
+  box.innerHTML = '<div class="loading"><div class="spinner"></div>正在扫描低粉爆款...</div>';
+  try {
+    const r = await api('/api/viral/radar', {
+      keyword,
+      maxFollowers: Number($('#viral_followers').value || 50000),
+      minLikes: Number($('#viral_likes').value || 1000),
+      pageSize: 50,
+    });
+    if (r.error) { box.innerHTML = `<div class="error">${r.error}</div>`; return; }
+    renderViralResults(r.items || [], keyword);
+  } catch (e) {
+    box.innerHTML = `<div class="error">扫描失败: ${e.message}</div>`;
+  }
+}
+
+function renderViralResults(items, keyword) {
+  const box = $('#viralResults');
+  viralWorks = items || [];
+  currentViralKeyword = keyword || '';
+  if (!items.length) {
+    box.innerHTML = `<div class="empty" style="padding:24px"><div class="empty-icon">~</div><div>暂未找到「${esc(keyword)}」的低粉爆款，可放宽粉丝或点赞阈值</div></div>`;
+    return;
+  }
+  box.innerHTML = `<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">找到 ${items.length} 条低粉爆款，按爆款指数排序</div>
+    <div class="hotlist">${items.map((item, idx) => {
+      const workUrl = safeUrl(item.workUrl);
+      return `
+      <div class="hot-item" style="cursor:pointer;border-left:3px solid var(--success);padding-left:12px" onclick="deconstructWork(${idx})">
+        <div class="hot-rank" style="min-width:44px;font-size:12px;color:var(--success)">${item.viralScore}</div>
+        <div class="hot-info">
+          <div class="hot-title">${esc(item.title)}</div>
+          <div class="hot-meta">
+            <span>${esc(item.accountName || '未知账号')}</span>
+            <span>粉丝 ${formatNum(item.followerCount)}</span>
+            <span>赞 ${formatNum(item.likeCount)}</span>
+            <span>评 ${formatNum(item.commentCount)}</span>
+            <span>互粉比 ${item.engagementRate}</span>
+            ${workUrl ? `<a href="${esc(workUrl)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="color:var(--accent)">打开作品</a>` : ''}
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <button class="btn btn-secondary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();saveWorkAsset(${idx})">保存资产</button>
+            <button class="btn btn-secondary" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();generateCopyFromWork(${idx})">生成文案</button>
+          </div>
+        </div>
+      </div>
+    `}).join('')}</div>`;
+}
+
+async function saveWorkAsset(workIndex, analysis) {
+  const work = viralWorks[workIndex];
+  if (!work) { showError('作品数据已失效，请重新扫描'); return; }
+  try {
+    const r = await api('/api/assets/save', {
+      work,
+      analysis: analysis || null,
+      profileId: selectedProfileId,
+      topicKeyword: currentViralKeyword,
+      status: analysis ? '已拆解' : '待改写',
+    });
+    if (r.error) { showError(r.error); return; }
+    trackerState = r.data;
+    renderAssetLibrary();
+  } catch (e) {
+    showError('保存资产失败: ' + e.message);
+  }
+}
+
+function generateCopyFromWork(workIndex) {
+  const work = viralWorks[workIndex];
+  if (!work) { showError('作品数据已失效，请重新扫描'); return; }
+  selectTopic({
+    title: work.title,
+    platform: work.platform || '抖音',
+    platformId: work.platformId || 'dy',
+    hotCount: work.likeCount,
+    relevance: work.viralScore,
+    reason: '低粉爆款参考',
+  });
+}
+
+function renderAssetLibrary() {
+  const box = $('#assetLibrary');
+  if (!box) return;
+  const assets = (trackerState.assets || [])
+    .filter(asset => !selectedProfileId || !asset.profileId || asset.profileId === selectedProfileId)
+    .slice(0, 8);
+  if (!assets.length) {
+    box.innerHTML = '<div style="font-size:12px;color:var(--text-muted)">暂无选题资产</div>';
+    return;
+  }
+  box.innerHTML = assets.map((asset) => `
+    <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:10px;font-size:12px">
+      <div style="font-weight:600;line-height:1.5;margin-bottom:4px">${esc(asset.work?.title || '')}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;color:var(--text-muted);margin-bottom:8px">
+        <span>${esc(asset.status || '待改写')}</span>
+        <span>${esc(asset.topicKeyword || '未绑定话题')}</span>
+        <span>赞 ${formatNum(asset.work?.likeCount)}</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-secondary" style="font-size:11px;padding:3px 8px" onclick="generateCopyFromAsset('${asset.id}')">生成文案</button>
+        <button class="btn btn-secondary" style="font-size:11px;padding:3px 8px" onclick="updateAssetStatus('${asset.id}','已发布')">标记发布</button>
+        <button class="btn btn-secondary" style="font-size:11px;padding:3px 8px" onclick="updateAssetStatus('${asset.id}','复盘中')">复盘中</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function generateCopyFromAsset(assetId) {
+  const asset = (trackerState.assets || []).find(item => item.id === assetId);
+  if (!asset?.work) { showError('资产不存在'); return; }
+  selectTopic({
+    title: asset.work.title,
+    platform: asset.work.platform || '抖音',
+    platformId: asset.work.platformId || 'dy',
+    hotCount: asset.work.likeCount,
+    relevance: asset.work.viralScore,
+    reason: asset.analysis?.viralType || '选题资产',
+  });
+}
+
+async function updateAssetStatus(assetId, status) {
+  try {
+    const r = await api('/api/assets/status', { assetId, status });
+    if (r.error) { showError(r.error); return; }
+    trackerState = r.data;
+    renderAssetLibrary();
+  } catch (e) {
+    showError('更新资产状态失败: ' + e.message);
+  }
+}
+
+function formatNum(num) {
+  const n = Number(num || 0);
+  if (n >= 10000) return (n / 10000).toFixed(1) + '万';
+  return String(n);
+}
+
+function renderSnapshotHistory() {
+  const box = $('#snapshotHistory');
+  const topicIds = new Set((trackerState.topics || [])
+    .filter(topic => !selectedProfileId || topic.profileId === selectedProfileId)
+    .map(topic => topic.id));
+  const snapshots = (trackerState.snapshots || [])
+    .filter(snapshot => !selectedProfileId || !snapshot.topicId || topicIds.has(snapshot.topicId))
+    .slice(0, 5);
+  if (!snapshots.length) {
+    box.innerHTML = '<div style="font-size:12px;color:var(--text-muted)">暂无快照</div>';
+    return;
+  }
+  box.innerHTML = snapshots.map(snapshot => `
+    <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px;font-size:12px">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+        <strong>${esc(snapshot.keyword)}</strong>
+        <span style="color:var(--text-muted)">${new Date(snapshot.createdAt).toLocaleString()}</span>
+      </div>
+      <div style="color:var(--text-muted);margin-top:4px">低粉爆款 ${snapshot.total} 条，Top：${esc(snapshot.topItems?.[0]?.title || '暂无')}</div>
+    </div>
+  `).join('');
+}
+
+async function deconstructWork(workIndex) {
+  const work = viralWorks[workIndex];
+  if (!work) { showError('作品数据已失效，请重新扫描'); return; }
+  const profile = trackerState.profiles?.find(item => item.id === selectedProfileId) || trackerState.profiles?.[0] || {};
+  const panel = $('#deconstructPanel');
+  panel.style.display = 'block';
+  panel.innerHTML = '<div class="loading"><div class="spinner"></div>正在拆解爆款结构...</div>';
+  try {
+    const r = await api('/api/viral/deconstruct', { work, profile });
+    if (r.error) { panel.innerHTML = `<div class="error">${r.error}</div>`; return; }
+    const a = r.analysis || {};
+    viralWorks[workIndex]._analysis = a;
+    panel.innerHTML = `
+      <div style="font-size:14px;font-weight:700;margin-bottom:8px">爆款拆解：${esc(work.title)}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;font-size:12px;line-height:1.6">
+        <div><strong>开头钩子</strong><br>${esc(a.hook || '')}</div>
+        <div><strong>爆点类型</strong><br>${esc(a.viralType || '')}</div>
+        <div><strong>互动原因</strong><br>${esc(a.interactionReason || '')}</div>
+        <div><strong>适配IP</strong><br>${esc(a.fitIp || '')}</div>
+      </div>
+      <div style="margin-top:10px;font-size:12px;line-height:1.7"><strong>结构</strong>：${(a.structure || []).map(x => esc(x)).join(' → ')}</div>
+      <div style="margin-top:8px;font-size:12px;line-height:1.7"><strong>可复制模板</strong>：${esc(a.reusableTemplate || '')}</div>
+      <div style="margin-top:8px;font-size:12px;color:var(--accent)"><strong>下一步</strong>：${(a.nextActions || []).map(x => esc(x)).join('、')}</div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-primary" style="font-size:12px;padding:6px 12px" onclick="saveWorkAsset(${workIndex}, viralWorks[${workIndex}]._analysis)">保存拆解资产</button>
+        <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="generateCopyFromWork(${workIndex})">基于它生成文案</button>
+      </div>
+      ${r.fallback ? '<div style="margin-top:8px;font-size:11px;color:var(--warning)">当前使用本地规则兜底拆解</div>' : ''}
+    `;
+  } catch (e) {
+    panel.innerHTML = `<div class="error">拆解失败: ${e.message}</div>`;
+  }
+}
+
+checkStatus();
+loadSettings();
+loadTracker();
+</script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "keywords": {
+    "人工智能": 1,
+    "AI": 0.5
+  },
+  "feedback": [
+    {
+      "topic": "AI选题",
+      "words": [
+        "人工智能",
+        "AI"
+      ],
+      "action": "like",
+      "weight": 0.5,
+      "time": 1782484362525
+    },
+    {
+      "topic": "AI选题",
+      "words": [
+        "人工智能"
+      ],
+      "action": "like",
+      "weight": 0.5,
+      "time": 1782484362543
+    }
+  ],
+  "pinned": [],
+  "blocked": []
+}

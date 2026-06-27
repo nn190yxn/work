@@ -1,0 +1,10 @@
+.env
+node_modules/
+dist/
+.vite/
+trackerData.json
+apiSettings.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

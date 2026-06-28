@@ -17,6 +17,7 @@
       </div>
     </div>
     <div class="status" id="statusBar">
+      <button class="theme-toggle" id="themeToggle" title="切换浅色/深色模式" onclick="toggleTheme()">&#9788;</button>
       <span><span class="status-dot off" id="dotRedfox"></span>RedFox 检测中</span>
       <span><span class="status-dot off" id="dotLLM"></span>LLM 检测中</span>
     </div>
@@ -1078,6 +1079,23 @@ async function deconstructWork(workIndex) {
     showErrorBox(panel, `拆解失败: ${e.message}`);
   }
 }
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = $('#themeToggle');
+  if (btn) btn.innerHTML = theme === 'light' ? '&#9789;' : '&#9788;';
+  localStorage.setItem('insprira-theme', theme);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+(function initTheme() {
+  const saved = localStorage.getItem('insprira-theme');
+  if (saved === 'light') applyTheme('light');
+})();
 
 checkStatus();
 loadSettings();

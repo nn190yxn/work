@@ -346,7 +346,7 @@ async function loadHotlist(plat) {
   container.innerHTML = '<div class="loading"><div class="spinner"></div>正在加载热榜...</div>';
   try {
     const r = await api('/api/hotspot/platform', { platform: plat, limit: 30 });
-    if (r.error) { container.innerHTML = `<div class="error">${r.error}</div>`; return; }
+    if (r.error) { showErrorBox(container, r.error); return; }
     const records = r.records;
     if (!records?.length) { container.innerHTML = '<div class="empty"><div class="empty-icon">-</div>暂无数据</div>'; return; }
     container.innerHTML = `<div class="hotlist">${records.map((item, i) => {
@@ -365,7 +365,7 @@ async function loadHotlist(plat) {
       </div>`;
     }).join('')}</div>`;
   } catch (e) {
-    container.innerHTML = `<div class="error">加载失败: ${e.message}</div>`;
+    showErrorBox(container, `加载失败: ${e.message}`);
   }
 }
 
@@ -374,6 +374,10 @@ function esc(s) {
   const d = document.createElement('div');
   d.textContent = String(s);
   return d.innerHTML;
+}
+
+function showErrorBox(container, message) {
+  container.innerHTML = `<div class="error">${esc(message)}</div>`;
 }
 
 function safeUrl(url) {
@@ -644,7 +648,7 @@ async function generateCopy(event, targetPlatform) {
 
   try {
     const r = await api('/api/copy/generate', { topic, targetPlatform, intent });
-    if (r.error) { output.innerHTML = `<div class="error">${r.error}</div>`; return; }
+    if (r.error) { showErrorBox(output, r.error); return; }
     output.innerHTML = `
       <div style="font-size:13px;font-weight:600;margin-bottom:6px">${esc(r.format)}</div>
       <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--text)">${esc(r.title)}</div>
@@ -654,7 +658,7 @@ async function generateCopy(event, targetPlatform) {
       </div>` : ''}
     `;
   } catch (e) {
-    output.innerHTML = `<div class="error">文案生成失败: ${e.message}</div>`;
+    showErrorBox(output, `文案生成失败: ${e.message}`);
   } finally {
     btn.disabled = false;
     btn.textContent = origText;
@@ -687,11 +691,11 @@ async function loadTrends() {
   status.textContent = '';
   try {
     const r = await api('/api/trends', {});
-    if (r.error) { container.innerHTML = `<div class="error">${r.error}</div>`; return; }
+    if (r.error) { showErrorBox(container, r.error); return; }
     renderTrends(r);
     status.textContent = `(${r.themes.length} 个主题，基于 ${r.totalItems} 条热榜)`;
   } catch (e) {
-    container.innerHTML = `<div class="error">分析失败: ${e.message}</div>`;
+    showErrorBox(container, `分析失败: ${e.message}`);
   }
 }
 
@@ -889,10 +893,10 @@ async function runViralRadar() {
       minLikes: Number($('#viral_likes').value || 1000),
       pageSize: 50,
     });
-    if (r.error) { box.innerHTML = `<div class="error">${r.error}</div>`; return; }
+    if (r.error) { showErrorBox(box, r.error); return; }
     renderViralResults(r.items || [], keyword);
   } catch (e) {
-    box.innerHTML = `<div class="error">扫描失败: ${e.message}</div>`;
+    showErrorBox(box, `扫描失败: ${e.message}`);
   }
 }
 
@@ -1050,7 +1054,7 @@ async function deconstructWork(workIndex) {
   panel.innerHTML = '<div class="loading"><div class="spinner"></div>正在拆解爆款结构...</div>';
   try {
     const r = await api('/api/viral/deconstruct', { work, profile });
-    if (r.error) { panel.innerHTML = `<div class="error">${r.error}</div>`; return; }
+    if (r.error) { showErrorBox(panel, r.error); return; }
     const a = r.analysis || {};
     viralWorks[workIndex]._analysis = a;
     panel.innerHTML = `
@@ -1071,7 +1075,7 @@ async function deconstructWork(workIndex) {
       ${r.fallback ? '<div style="margin-top:8px;font-size:11px;color:var(--warning)">当前使用本地规则兜底拆解</div>' : ''}
     `;
   } catch (e) {
-    panel.innerHTML = `<div class="error">拆解失败: ${e.message}</div>`;
+    showErrorBox(panel, `拆解失败: ${e.message}`);
   }
 }
 

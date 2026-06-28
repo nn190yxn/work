@@ -30,6 +30,7 @@ loadEnv();
 
 const PORT = Number(process.env.PORT || 3001);
 const DESKTOP_MODE = process.env.DESKTOP_MODE === '1' || process.argv.includes('--desktop') || process.env.NODE_ENV === 'production';
+const HOST = DESKTOP_MODE ? '127.0.0.1' : (process.env.HOST || '0.0.0.0');
 const REDFOX_API_KEY = process.env.REDFOX_API_KEY || '';
 const REDFOX_HOST = process.env.REDFOX_HOST || 'redfox.hk';
 const LLM_BASE_URL = process.env.LLM_BASE_URL || '';
@@ -1151,18 +1152,21 @@ function platformLabel(p) {
 
 if (DESKTOP_MODE) {
   const distDir = path.join(__dirname, 'dist');
-  if (fs.existsSync(distDir)) {
-    app.use(express.static(distDir));
-    app.get('*', (req, res, next) => {
-      if (req.path.startsWith('/api/')) return next();
-      res.sendFile(path.join(distDir, 'index.html'));
-    });
+  const indexFile = path.join(distDir, 'index.html');
+  if (!fs.existsSync(indexFile)) {
+    console.error('[insprira-lite] 桌面模式缺少 dist/index.html，请先运行 npm run build');
+    process.exit(1);
   }
+  app.use(express.static(distDir));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(indexFile);
+  });
 }
 
-app.listen(PORT, () => {
-  console.log(`[insprira-lite] 后端服务已启动: http://localhost:${PORT}`);
-  if (DESKTOP_MODE) console.log(`[insprira-lite] 桌面模式入口: http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`[insprira-lite] 后端服务已启动: http://${HOST}:${PORT}`);
+  if (DESKTOP_MODE) console.log(`[insprira-lite] 桌面模式入口: http://${HOST}:${PORT}`);
   console.log(`[insprira-lite] RedFox API: ${REDFOX_API_KEY ? '已配置' : '未配置'}`);
   console.log(`[insprira-lite] LLM: ${LLM_BASE_URL && LLM_API_KEY ? LLM_MODEL : '未配置'}`);
 });

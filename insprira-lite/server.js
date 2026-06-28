@@ -36,7 +36,17 @@ const REDFOX_HOST = process.env.REDFOX_HOST || 'redfox.hk';
 const LLM_BASE_URL = process.env.LLM_BASE_URL || '';
 const LLM_API_KEY = process.env.LLM_API_KEY || '';
 const LLM_MODEL = process.env.LLM_MODEL || 'gpt-4o-mini';
-const API_SETTINGS_FILE = path.join(__dirname, 'apiSettings.json');
+
+function getDataDir() {
+  if (!DESKTOP_MODE) return __dirname;
+  const baseDir = process.env.APPDATA || process.env.LOCALAPPDATA || process.env.HOME || __dirname;
+  const dataDir = path.join(baseDir, 'insprira-lite');
+  fs.mkdirSync(dataDir, { recursive: true });
+  return dataDir;
+}
+
+const DATA_DIR = getDataDir();
+const API_SETTINGS_FILE = path.join(DATA_DIR, 'apiSettings.json');
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -439,12 +449,16 @@ app.post('/api/trends', async (req, res) => {
   }
 });
 
-const CONFIG_FILE = path.join(__dirname, 'keywordConfig.json');
+const CONFIG_FILE = path.join(DATA_DIR, 'keywordConfig.json');
+const DEFAULT_CONFIG_FILE = path.join(__dirname, 'keywordConfig.json');
 
 function loadConfig() {
   try {
     if (fs.existsSync(CONFIG_FILE)) {
       return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
+    }
+    if (CONFIG_FILE !== DEFAULT_CONFIG_FILE && fs.existsSync(DEFAULT_CONFIG_FILE)) {
+      return JSON.parse(fs.readFileSync(DEFAULT_CONFIG_FILE, 'utf-8'));
     }
   } catch {}
   return { keywords: {}, feedback: [], pinned: [], blocked: [] };
@@ -454,7 +468,7 @@ function saveConfig(cfg) {
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf-8');
 }
 
-const TRACKER_FILE = path.join(__dirname, 'trackerData.json');
+const TRACKER_FILE = path.join(DATA_DIR, 'trackerData.json');
 
 function loadTracker() {
   try {

@@ -26,12 +26,20 @@
 
 脚本会自动完成以下动作：
 
-- 安装依赖
+- 安装或更新依赖
 - 构建前端页面
 - 启动本地服务
 - 用浏览器 app 窗口打开 `http://localhost:3001`
 
 升级时拉取最新代码后再次双击 `start-desktop.bat` 即可。
+
+桌面模式会把运行时数据保存到 Windows 用户数据目录：
+
+```text
+%APPDATA%\insprira-lite
+```
+
+这包括 API 设置、IP 档案、选题快照和资产库。升级或重新拉取代码时，这些本地数据会继续保留。
 
 ### 开发模式
 
@@ -92,7 +100,7 @@ npm run desktop
 - `trackerData.json`：IP 档案、选题、快照和资产库，本地生成。
 - `keywordConfig.json`：关键词权重和反馈配置。
 
-`apiSettings.json` 和 `trackerData.json` 属于本地运行数据，默认不会提交到 Git。
+开发模式下，运行数据位于项目目录。桌面模式下，运行数据位于 `%APPDATA%\insprira-lite`。`apiSettings.json` 和 `trackerData.json` 属于本地运行数据，默认不会提交到 Git。
 
 ## 注意事项
 
